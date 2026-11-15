@@ -1,0 +1,22 @@
+@page
+@model Vasen.Web.Pages.Members.IndexModel
+@{ ViewData["Title"] = "Användare"; }
+<div class="members-page">
+<a class="back-link" asp-page="/Account/Profile">← Mitt konto</a>
+<div class="member-heading"><h1>Användare</h1><a class="button primary" asp-page="Edit">Lägg till</a></div>
+<div class="member-table-wrap">
+<table class="member-table">
+    <thead><tr><th scope="col">Person</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+    @foreach (var member in Model.Members)
+    {
+        <tr><td><a class="member-row-link" asp-page="Edit" asp-route-id="@member.Id">@member.DisplayName<span class="member-note">@(string.IsNullOrWhiteSpace(member.Email) ? "E-post saknas" : member.Email) · @member.AccessName</span></a></td>
+        <td><span class="badge @(member.IsActive ? "settled" : "pending")">@(member.IsActive ? "Aktiv" : "Pausad")</span>
+        @if (member.MustChangePassword) { <span class="member-note">Ska välja lösenord</span> }</td></tr>
+    }
+    </tbody>
+</table>
+</div>
+<p class="hint section-gap">Tryck på en person för att ändra uppgifter, pausa kontot eller ordna ett nytt lösenord.</p>
+@if (Model.IsOwner) { <a class="back-link" asp-page="Cleanup">Rensa pausade konton →</a> }
+</div>

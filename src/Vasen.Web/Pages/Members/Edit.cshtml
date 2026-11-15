@@ -1,0 +1,53 @@
+@page "{id?}"
+@model Vasen.Web.Pages.Members.EditModel
+@{ ViewData["Title"] = Model.Id == null ? "Lägg till användare" : "Ändra användare"; }
+<div class="members-page narrow">
+<a class="back-link" asp-page="Index">← Användare</a>
+<h1>@(Model.Id == null ? "Lägg till användare" : Model.Member!.DisplayName)</h1>
+<div asp-validation-summary="All" class="validation" role="alert"></div>
+@if (Model.TemporaryPassword != null)
+{
+    <section class="notice member-credentials" aria-label="Tillfälliga inloggningsuppgifter">
+        <h2>Tillfälligt lösenord</h2>
+        <p>Ge uppgifterna till personen. Lösenordet visas bara nu och måste bytas vid inloggning.</p>
+        <p><strong>@Model.Member!.DisplayName</strong><br />@Model.Member.Email</p>
+        <label>Tillfälligt lösenord<input id="temporary-password" value="@Model.TemporaryPassword" readonly autocomplete="off" spellcheck="false" /></label>
+        @if (!Model.Member.IsActive) { <p>Kontot är pausat. Återaktivera det för att tillåta inloggning.</p> }
+    </section>
+}
+<form method="post" asp-route-id="@Model.Id" class="panel stack member-form">
+    <input type="hidden" asp-for="Stamp" />
+    <label>Namn<input asp-for="DisplayName" maxlength="100" autocomplete="name" required /></label>
+    <label>E-post<input asp-for="Email" type="email" maxlength="254" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" required /></label>
+    <label>Behörighet<select asp-for="AccessLevel"><option value="0">Läsare</option><option value="1">Kvittoregistrerare</option></select></label>
+    <p class="hint">Läsare kan se ekonomin. Kvittoregistrerare kan även lägga till och rätta egna registreringar fram till avslut.</p>
+    @if (Model.Id == null) { <p class="hint">Ett tillfälligt lösenord visas när kontot skapats. Personen kan logga in med namn eller e-post.</p> }
+    @if (Model.Member != null)
+    {
+        <div>
+            <label class="check-label"><input asp-for="IsOwner" aria-describedby="owner-help" />Ägare</label>
+            <p class="hint" id="owner-help">Har full behörighet oavsett valet ovan och ingår i fördelningen av insättningsbehovet.</p>
+        </div>
+    }
+    <button class="button primary">@(Model.Id == null ? "Skapa konto" : "Spara uppgifter")</button>
+</form>
+@if (Model.Member != null && !Model.IsSelf)
+{
+    <details class="panel section-gap member-options"><summary>Nytt lösenord</summary>
+        <p class="hint">Det gamla lösenordet slutar fungera och öppna inloggningar avslutas. Personen väljer ett eget lösenord nästa gång.</p>
+        <form method="post" asp-page-handler="Reset" asp-route-id="@Model.Id">
+            <input type="hidden" asp-for="Stamp" />
+            <button class="button secondary">Skapa tillfälligt lösenord</button>
+        </form>
+    </details>
+    <details class="panel section-gap member-options"><summary>@(Model.Member.IsActive ? "Pausa konto" : "Återaktivera konto")</summary>
+        <p class="hint">@(Model.Member.IsActive ? "Personen kan inte logga in eller väljas för nya registreringar. Kvitton och historik finns kvar." : "Personen kan logga in och väljas för nya registreringar igen.")</p>
+        <form method="post" asp-page-handler="Active" asp-route-id="@Model.Id">
+            <input type="hidden" asp-for="Stamp" />
+            <input type="hidden" name="active" value="@((!Model.Member.IsActive).ToString().ToLowerInvariant())" />
+            <button class="button secondary">@(Model.Member.IsActive ? "Pausa konto" : "Återaktivera konto")</button>
+        </form>
+    </details>
+}
+@if (Model.IsSelf) { <p class="hint section-gap">Byt ditt eget lösenord under <a asp-page="/Account/Profile">Mitt konto</a>.</p> }
+</div>

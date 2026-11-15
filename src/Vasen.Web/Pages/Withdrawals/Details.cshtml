@@ -1,0 +1,18 @@
+@page "{id:int}"
+@model Vasen.Web.Pages.Withdrawals.DetailsModel
+@{ ViewData["Title"] = "Uttag"; var w = Model.Withdrawal; }
+<a class="back-link" asp-page="Index">← Alla uttag</a><h1>@w.Member.DisplayName</h1><p class="muted">@w.Date.ToString("d MMMM yyyy") · Avslut #@w.Id</p>
+<section class="panel stack narrow settlement-panel"><div><span class="field-label">Utbetalt belopp</span><strong class="hero-amount">@Money.Format(w.AmountOre)</strong></div>
+@if(w.IsUndone) { <div class="notice">Avslutet är ångrat. Eget bidrag från detta avslut räknas inte längre med.</div> }
+else
+{
+    @if(w.OwnContributionOre > 0) { <div class="total-row"><span>Eget bidrag</span><strong>@Money.Format(w.OwnContributionOre)</strong></div><p class="hint">Tillgodoräknat @w.Member.DisplayName utan bankinsättning.</p> }
+    <div class="total-row"><span>Aktuell kvittosumma</span><strong>@Money.Format(Model.CurrentTotal)</strong></div><div class="total-row"><span>Skillnad efter eget bidrag</span><strong>@Money.Format(w.AmountOre + w.OwnContributionOre - Model.CurrentTotal)</strong></div>
+}
+<div class="total-row"><span>Kvittosumma vid registrering</span><strong>@Money.Format(w.OriginalReceiptTotalOre)</strong></div>
+@if(w.OwnContributionOre > 0) { <p class="hint">Eget bidrag registrerades till @Money.Format(w.OwnContributionOre) på avslutsdatumet. Vid kvittorättelser ändras det inte automatiskt; ångra avslutet och registrera det på nytt om bidraget ska ändras.</p> }
+@if(!string.IsNullOrWhiteSpace(w.Comment)) { <p>@w.Comment</p> }
+@foreach(var r in w.Receipts) { <div class="total-row"><span>@if(r.DeletedUtc == null) { <a asp-page="/Receipts/Edit" asp-route-id="@r.Id">@r.Description</a> } else { <span>@r.Description · I papperskorgen</span> }</span><strong>@Money.Format(r.AmountOre)</strong></div> }
+</section>
+@if(Access.IsOwner && !w.IsUndone) { <form method="post" asp-page-handler="Undo" class="narrow section-gap" data-confirm="Ångra kopplingen till kvittona? Bankbetalningen påverkas inte."><input type="hidden" name="version" value="@w.Version" /><button class="button danger">Ångra ersättningskopplingen</button></form> }
+<details class="panel narrow section-gap"><summary>Uttagets historik</summary>@foreach(var a in Model.History) { <div class="history-entry"><strong>@a.Action</strong><time>@a.AtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time><pre>@a.Detail</pre></div> }</details>

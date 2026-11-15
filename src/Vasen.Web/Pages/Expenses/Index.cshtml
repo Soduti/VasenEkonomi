@@ -1,0 +1,8 @@
+@page
+@model Vasen.Web.Pages.Expenses.IndexModel
+@{ ViewData["Title"] = "Gemensamma utgifter"; }
+<a class="back-link" asp-page="/Budget/Index" asp-route-year="@Model.Year">← Till budgeten</a><p class="eyebrow">BETALT FRÅN GEMENSAMT KONTO</p><h1>Gemensamma utgifter</h1><p class="muted">El, lån och annat som betalas direkt från kontot. @(Access.IsOwner ? "Lägg in delbelopp eller klumpsummor." : "Här visas registrerade utgifter.")</p>
+<form method="get" class="year-picker"><label>År<input asp-for="Year" type="number" min="2000" max="2100" /></label><button class="button secondary">Visa</button></form>
+@if (Access.IsOwner) { <div class="section-gap"><a class="button primary" asp-page="Edit" asp-route-year="@Model.Year">＋ Registrera utgift</a></div> }<section class="panel section-gap"><div class="total-row"><span>Registrerat för @Model.Year</span><strong>@Money.Format(Model.Expenses.Sum(x => x.AmountOre))</strong></div></section>
+@if(Model.Expenses.Count == 0) { <section class="panel empty section-gap"><h2>Inga utgifter registrerade</h2><p class="muted">@(Access.IsOwner ? "Du kan exempelvis lägga in en årssumma för el och komplettera senare." : "Inga gemensamma utgifter finns för året.")</p></section> }
+@foreach(var expense in Model.Expenses) { <a class="panel withdrawal-card" href="@(Access.IsOwner ? Url.Page("Edit", new { id = expense.Id }) : null)"><div><strong>@expense.Category</strong><span class="hint">@expense.Comment</span></div><strong>@Money.Format(expense.AmountOre) →</strong></a> }

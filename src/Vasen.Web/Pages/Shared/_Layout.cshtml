@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#244c3d" />
+    <title>@ViewData["Title"] · Vasen</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a class="skip-link" href="#main">Till innehållet</a>
+    <header class="topbar"><a class="brand" asp-page="/Index"><span class="brand-mark" aria-hidden="true">V</span> Vasen</a>
+    @if (User.Identity?.IsAuthenticated == true)
+    { <a class="account-link" asp-page="/Account/Profile" aria-label="Mitt konto">Mitt konto</a> }
+    </header>
+    <main id="main" class="page-shell">
+        @if (TempData["Message"] is string message) { <div class="notice" role="status">@message</div> }
+        @RenderBody()
+    </main>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        var current = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+        <nav class="bottom-nav" aria-label="Huvudmeny">
+            <a class="@(current == "/Index" ? "active" : "")" asp-page="/Index"><span aria-hidden="true">▤</span>Kvitton</a>
+            @if (Access.CanRegisterReceipts) { <a class="@(current == "/Receipts/Edit" ? "active" : "")" href="~/Receipts/Edit"><span aria-hidden="true">＋</span>Nytt utlägg</a> }
+            <a class="@(current.StartsWith("/Withdrawals") ? "active" : "")" asp-page="/Withdrawals/Index"><span aria-hidden="true">↗</span>Uttag</a>
+            <a class="@(current.StartsWith("/Budget") || current.StartsWith("/Expenses") ? "active" : "")" asp-page="/Budget/Index"><span aria-hidden="true">▥</span>Budget</a>
+            <a class="@(current.StartsWith("/Deposits") ? "active" : "")" asp-page="/Deposits/Index"><span aria-hidden="true">↓</span>Insättningar</a>
+        </nav>
+    }
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

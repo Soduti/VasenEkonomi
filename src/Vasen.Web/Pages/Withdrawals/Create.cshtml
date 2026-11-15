@@ -1,0 +1,19 @@
+@page
+@model Vasen.Web.Pages.Withdrawals.CreateModel
+@{ ViewData["Title"] = "Registrera uttag"; }
+<a class="back-link" href="@Model.BackUrl">← Till urvalet</a><h1>Avsluta kvitton</h1><p class="hint">Ange vad du tar ut. Kvittona blir klara även om uttaget skiljer sig från kostnaden.</p>
+<form method="post" class="panel stack narrow settlement-form">
+    <div asp-validation-summary="All" class="validation" role="alert"></div>
+    <input type="hidden" asp-for="ReturnUrl" />@foreach(var id in Model.Ids) { <input type="hidden" name="Ids" value="@id" /> }
+    @if(Model.Receipts.Count > 0) { <h2>@Model.Receipts[0].Member.DisplayName</h2><div class="total-row"><span>@Model.Receipts.Count kvitton</span><strong>@Money.Format(Model.Receipts.Sum(r => r.AmountOre))</strong></div> }
+    <label>Faktiskt utbetalt belopp (kr)<input asp-for="Amount" inputmode="decimal" required /></label>
+    <p class="hint">Beloppet får skilja sig från kvittosumman.</p>
+    <label class="check-label"><input asp-for="CountDifferenceAsOwnContribution" />Räkna skillnaden som eget bidrag</label>
+    <p class="hint">Exempel: kvitto 15 000 kr, uttag 10 000 kr → eget bidrag 5 000 kr. Bidraget tillgodoräknas kvittots person på uttagsdatumet och är ingen bankinsättning.</p>
+    <p id="own-contribution-preview" class="notice" data-total-ore="@Model.ReceiptTotal" hidden="@(!Model.CountDifferenceAsOwnContribution)">Eget bidrag: @Money.Format(Model.OwnContribution)</p>
+    <label>Uttagsdatum<input asp-for="Date" type="date" required /></label>
+    <label>Kommentar (valfritt)<input asp-for="Comment" maxlength="300" /></label>
+    <details><summary>Visa valda kvitton</summary>@foreach(var r in Model.Receipts) { <div class="total-row"><span>@r.Date.ToString("yyyy-MM-dd") · @r.Description</span><strong>@Money.Format(r.AmountOre)</strong></div> }</details>
+    @if(Model.Receipts.Count > 0) { <button class="button primary">Registrera och markera som klara</button> }
+    <a class="button secondary" href="@Model.BackUrl">Avbryt</a>
+</form>

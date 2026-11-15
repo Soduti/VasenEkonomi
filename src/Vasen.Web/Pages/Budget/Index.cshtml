@@ -1,0 +1,45 @@
+@page
+@model Vasen.Web.Pages.Budget.IndexModel
+@using Vasen.Web.Models
+@{ ViewData["Title"] = "Budget"; var s = Model.Summary; var hasBudget = s.Categories.Any(x => x.BudgetOre.HasValue); }
+<div class="budget-page">
+<div class="budget-heading"><h1>Budget</h1><form method="get" class="year-picker"><label>År<input asp-for="Year" type="number" min="2000" max="2100" /></label><button class="button secondary">Visa</button></form></div>
+<p class="hint">Planera årets kostnader och följ vad som hittills registrerats.</p>
+@if (Access.IsOwner) { <div class="budget-actions"><a class="button primary" asp-page="Edit" asp-route-year="@Model.Year">＋ Fast kostnad</a><a class="button secondary" asp-page="/Expenses/Edit" asp-route-year="@Model.Year">Registrera utgift</a></div> }
+<div class="budget-table-wrap"><table class="budget-table" aria-label="Årsbudget @Model.Year">
+<thead><tr><th scope="col">Kostnad</th><th scope="col" class="money-cell">Budget</th><th scope="col" class="money-cell">Utfall</th><th scope="col" class="budget-wide money-cell">Kvar</th></tr></thead>
+<tbody>
+@foreach(var row in s.Categories)
+{
+    var remaining = row.BudgetOre - row.ActualOre;
+    var editUrl = row.Line != null ? Url.Page("Edit",new { id = row.Line.Id }) : Url.Page("Edit",new { year = Model.Year,source = row.Source,category = row.Category });
+    <tr class="@(row.Source == ExpenseSource.PrivateReceipt ? "private-budget-row" : "")">
+    <th scope="row"><a class="budget-row-link" href="@(Access.IsOwner ? editUrl : null)" aria-label="@(Access.IsOwner ? (row.BudgetOre.HasValue ? "Ändra budget för " : "Ange budget för ") + row.Category : null)">@row.Category<span class="budget-row-note">@(row.Source == ExpenseSource.PrivateReceipt ? "Alla privata kvitton" : "Gemensamt konto")</span></a></th>
+    <td class="money-cell">@if(row.BudgetOre.HasValue) { @Money.Format(row.BudgetOre.Value) } else if (Access.IsOwner) { <a class="budget-missing" href="@editUrl">Ange belopp</a> } else { <span class="budget-missing">Ej angivet</span> }</td>
+    <td class="money-cell">@if(row.ActualOre.HasValue) { @Money.Format(row.ActualOre.Value) } else { <span class="budget-missing">Ej angivet</span> }<span class="budget-narrow budget-row-note @(remaining < 0 ? "validation" : "")">@(remaining.HasValue ? "Kvar: " + Money.Format(remaining.Value) : "")</span></td>
+    <td class="budget-wide money-cell @(remaining < 0 ? "validation" : "")">@(remaining.HasValue ? Money.Format(remaining.Value) : "—")</td>
+    </tr>
+}
+</tbody>
+<tfoot><tr><th scope="row">Summa</th><td class="money-cell">@Money.Format(s.BudgetOre)</td><td class="money-cell">@Money.Format(s.ActualOre)</td><td class="budget-wide money-cell">@Money.Format(s.BudgetOre-s.ActualOre)</td></tr></tfoot>
+</table></div>
+<p class="hint budget-help">@(Access.IsOwner ? "Tryck på en kostnad för att ändra budgeten. " : "")Alla privata kvitton räknas i samma pott, även utan kostnadsslag. Utfall som inte angetts ingår som noll i summan.</p>
+<a class="back-link" asp-page="/Expenses/Index" asp-route-year="@Model.Year">Visa gemensamma utgifter →</a>
+<section class="panel budget-plan"><div class="budget-plan-heading"><h2>Insättning per ägare</h2><strong>@(s.OwnerCount == 0 ? "Inga aktiva ägare" : hasBudget ? Money.Format(s.MonthlyPerOwnerOre) + "/mån" : "Ange budget först")</strong></div>
+<p class="hint">För hela året, delat lika på @s.OwnerCount aktiva ägare. Månadsbeloppet avrundas uppåt till hela kronor.</p>
+<details><summary>Ingående kassa och beräkning</summary>
+<div class="total-row"><span>Årets budget</span><strong>@Money.Format(s.BudgetOre)</strong></div><div class="total-row"><span>Minus ingående kassa</span><strong>@Money.Format(s.OpeningOre)</strong></div><div class="total-row"><span>Totalt att sätta in</span><strong>@Money.Format(s.NeededOre)</strong></div><div class="total-row"><span>Per ägare och år</span><strong>@(s.OwnerCount > 0 ? Money.Format(s.AnnualPerOwnerOre) : "—")</strong></div>
+@if (Access.IsOwner) { <form method="post" asp-page-handler="Opening" class="stack budget-cash-form"><input type="hidden" name="Year" value="@Model.Year" /><input type="hidden" name="version" value="@(s.Settings?.Version ?? Guid.Empty)" /><label>Kassa vid årets början (kr)<input name="opening" value="@Money.Input(s.OpeningOre)" inputmode="decimal" required /></label><p class="hint">Ange pengarna som fanns vid årets början, inte dagens saldo. Noll är tillåtet.</p><button class="button secondary">Spara kassa</button></form> }
+<p class="hint budget-help">Förslaget gäller hela året och ändrar inte månadsreglerna automatiskt.</p>
+</details>
+@if(s.OwnerCount == 0) { <p class="hint">Insättningsförslaget kan inte beräknas utan en aktiv ägare.</p> }
+</section>
+<details class="panel budget-result"><summary>Bidrag och årets resultat</summary>
+<div class="total-row"><span>Insättningar till kontot</span><strong>@Money.Format(s.DepositsOre)</strong></div><div class="total-row"><span>Eget bidrag från utlägg</span><strong>@Money.Format(s.OwnContributionOre)</strong></div><div class="total-row"><span>Bidrag totalt</span><strong>@Money.Format(s.FundingOre)</strong></div><div class="total-row"><span>Registrerade utgifter</span><strong>@Money.Format(s.ActualOre)</strong></div><div class="total-row"><span>Överskott / underskott hittills</span><strong>@Money.Format(s.NetOre)</strong></div><div class="total-row"><span>Med ingående kassa</span><strong>@Money.Format(s.RemainingOre)</strong></div><div class="total-row"><span>Årets oersatta privata utlägg</span><strong>@Money.Format(s.OutstandingOre)</strong></div>
+<p class="hint budget-help">Kvitton räknas på kvittodatum, även innan ersättning betalats. Uttag för att ersätta kvitton räknas inte som nya utgifter. Resultatet är därför inte ett banksaldo.</p>
+<h2>Bidrag per person</h2><p class="hint budget-help">Eget bidrag är den del av ett klart kvitto som personen bekostar privat. Det registreras på avslutsdatumet och är ingen bankinsättning.</p>
+<div class="budget-table-wrap"><table class="budget-table" aria-label="Bidrag per person @Model.Year"><thead><tr><th scope="col">Person</th><th scope="col" class="money-cell">Till kontot</th><th scope="col" class="money-cell">Eget</th><th scope="col" class="budget-wide money-cell">Totalt</th></tr></thead><tbody>
+@foreach(var owner in s.Owners) { <tr><th scope="row">@owner.Name<span class="budget-narrow budget-row-note">Totalt @Money.Format(owner.TotalOre)</span></th><td class="money-cell">@Money.Format(owner.Ore)</td><td class="money-cell">@Money.Format(owner.OwnContributionOre)</td><td class="budget-wide money-cell">@Money.Format(owner.TotalOre)</td></tr> }
+</tbody><tfoot><tr><th scope="row">Summa</th><td class="money-cell">@Money.Format(s.DepositsOre)</td><td class="money-cell">@Money.Format(s.OwnContributionOre)</td><td class="budget-wide money-cell">@Money.Format(s.FundingOre)</td></tr></tfoot></table></div><a class="back-link" asp-page="/Deposits/Index" asp-route-year="@Model.Year">Visa bankinsättningar →</a>
+</details>
+</div>

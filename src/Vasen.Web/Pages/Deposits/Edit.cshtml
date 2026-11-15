@@ -1,0 +1,11 @@
+@page "{id:int?}"
+@model Vasen.Web.Pages.Deposits.EditModel
+@{ ViewData["Title"] = "Insättning"; }
+<a class="back-link" asp-page="Index" asp-route-year="@Model.Date.Year">← Till insättningarna</a><p class="eyebrow">PENGAR TILL GEMENSAMMA KASSAN</p><h1>@(Model.Id.HasValue ? "Ändra insättning" : "Engångsinsättning")</h1><p class="muted">Registrera beloppet här. Själva överföringen görs i banken.</p>
+@if(Model.Id == null) { <p class="hint">Om betalningen redan finns som en automatisk månadsinsättning, rätta den posten i stället för att lägga till en ny.</p> }
+@if(Model.Deposit?.RuleId != null) { <div class="notice">Skapad automatiskt från en månadsregel. En rättelse gäller bara denna insättning; kommande månader följer regeln.</div> }
+<form method="post" class="panel stack narrow"><div asp-validation-summary="All" class="validation" role="alert"></div><input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" />
+@if(Model.Deposit?.RuleId != null) { <input type="hidden" asp-for="Person" /><div><span class="field-label">Ägare</span><strong>@Model.Deposit.Member.DisplayName</strong></div> }
+else { <label>Ägare<select asp-for="Person">@foreach(var m in Model.Members) { <option value="@m.Id">@m.DisplayName</option> }</select></label> }
+<label>Belopp (kr)<input asp-for="Amount" inputmode="decimal" required /></label><label>Datum<input asp-for="Date" type="date" required /></label><label>Kommentar (valfritt)<input asp-for="Comment" maxlength="300" /></label><button class="button primary">Spara insättning</button><a class="button secondary" asp-page="Index" asp-route-year="@Model.Date.Year">Avbryt</a></form>
+@if(Model.Id.HasValue) { <form method="post" asp-page-handler="Void" class="narrow section-gap" data-confirm="Makulera insättningen? Den tas bort ur summorna och historiken behålls."><input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" /><button class="button danger">Makulera insättning</button></form> }

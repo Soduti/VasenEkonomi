@@ -1,0 +1,10 @@
+@page "{id:int?}"
+@model Vasen.Web.Pages.Deposits.RuleModel
+@{ ViewData["Title"] = "Månadsregel"; }
+<a class="back-link" asp-page="Index">← Till insättningarna</a><p class="eyebrow">ÅTERKOMMANDE INSÄTTNING</p><h1>@(Model.Id.HasValue ? "Ändra månadsregel" : "Ny månadsregel")</h1><p class="muted">Beloppet registreras automatiskt varje månad utan bankbekräftelse.</p>
+<form method="post" class="panel stack narrow"><div asp-validation-summary="All" class="validation" role="alert"></div><input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" />
+@if(Model.Rule is {} rule) { <input type="hidden" asp-for="Person" /><input type="hidden" asp-for="Start" /><div><span class="field-label">Ägare och startdatum</span><strong>@rule.Member.DisplayName · @rule.Start.ToString("yyyy-MM-dd")</strong></div> }
+else { <label>Ägare<select asp-for="Person">@foreach(var m in Model.Members) { <option value="@m.Id">@m.DisplayName</option> }</select></label><label>Startdatum<input asp-for="Start" type="date" required /></label> }
+<label>Månadsbelopp (kr)<input asp-for="Amount" inputmode="decimal" required /></label><label>Dag i månaden<input asp-for="Day" type="number" inputmode="numeric" min="1" max="31" required /></label><p class="hint">Om dagen saknas används månadens sista dag.</p><label>Slutdatum (valfritt)<input asp-for="End" type="date" /></label><label class="check-label"><input asp-for="IsPaused" />Pausa automatiska insättningar</label>
+<div class="notice mb-0">Ett startdatum bakåt i tiden skapar redan förfallna månadsinsättningar. Pausade månader hoppas över och fylls inte på när regeln återupptas. Ändringar gäller kommande insättningar; redan skapade belopp rättas separat.</div>
+<button class="button primary">Spara månadsregel</button><a class="button secondary" asp-page="Index">Avbryt</a></form>

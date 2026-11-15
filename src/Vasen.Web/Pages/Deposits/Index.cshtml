@@ -1,0 +1,33 @@
+@page
+@model Vasen.Web.Pages.Deposits.IndexModel
+@{ ViewData["Title"] = "Insättningar"; }
+<div class="deposits-page">
+<h1>Insättningar</h1><p class="muted">Engångsbelopp och automatiska månadsinsättningar, fristående från banken.</p>
+@if (Access.IsOwner) { <div class="finance-actions"><a class="button primary" asp-page="Edit">＋ Insättning</a><a class="button secondary" asp-page="Rule">＋ Månadsregel</a></div> }
+<form method="get" class="panel filter-grid section-gap"><label>År<input asp-for="Year" type="number" min="2000" max="2100" /></label><label>Person<select asp-for="Person"><option value="">Alla ägare</option>@foreach(var m in Model.Members) { <option value="@m.Id">@m.DisplayName</option> }</select></label><button class="button secondary">Visa urval</button></form>
+<dl class="deposit-totals section-gap"><div><dt>Summa i urvalet</dt><dd>@Money.Format(Model.Deposits.Sum(x => x.AmountOre))</dd></div><div><dt>Varav automatiska</dt><dd>@Money.Format(Model.Deposits.Where(x => x.RuleId != null).Sum(x => x.AmountOre))</dd></div></dl>
+<details class="deposit-rules"><summary>Månadsregler <span class="count">@Model.Rules.Count</span></summary><p class="hint">Alla år visas. @(Access.IsOwner ? "Klicka på personen för att ändra en regel. " : "")Insättningarna registreras automatiskt utan bankkontroll.</p>
+@if(Model.Rules.Count == 0) { <p class="hint">Skapa en regel för varje ägares stående månadsbelopp.</p> }
+else
+{
+    <div class="deposit-table-wrap"><table class="deposit-table rule-table" aria-label="Månadsregler"><thead><tr><th scope="col">Person</th><th scope="col">Dag</th><th scope="col">Status</th><th scope="col" class="deposit-amount">Belopp</th></tr></thead><tbody>
+    @foreach(var rule in Model.Rules)
+    {
+        <tr><td><a class="deposit-row-link" href="@(Access.IsOwner ? Url.Page("Rule", new { id = rule.Id }) : null)">@rule.Member.DisplayName<span class="deposit-note">@rule.Start.ToString("yyyy-MM-dd")@(rule.End.HasValue ? " – " + rule.End.Value.ToString("yyyy-MM-dd") : " tills vidare")</span></a></td><td>@rule.Day</td><td><span class="badge @(rule.IsPaused ? "pending" : "settled")">@(rule.IsPaused ? "Pausad" : rule.End < Model.Today ? "Avslutad" : rule.Start > Model.Today ? "Kommande" : "Aktiv")</span></td><td class="deposit-amount">@Money.Format(rule.AmountOre)</td></tr>
+    }
+    </tbody></table></div>
+}
+</details>
+<section class="section-gap"><div class="list-heading"><h2>Registrerade @Model.Year</h2><span class="count">@Model.Deposits.Count</span></div>
+@if(Model.Deposits.Count == 0) { <div class="panel empty"><h2>Inga insättningar i urvalet</h2><p class="muted">@(Access.IsOwner ? "Lägg till ett engångsbelopp eller en månadsregel." : "Inga registrerade insättningar för urvalet.")</p></div> }
+else
+{
+    <div class="deposit-table-wrap"><table class="deposit-table deposits-table" aria-label="Registrerade insättningar @Model.Year"><thead><tr><th scope="col" class="deposit-date">Datum</th><th scope="col">Person</th><th scope="col" class="deposit-desktop">Typ</th><th scope="col" class="deposit-desktop">Kommentar</th><th scope="col" class="deposit-amount">Belopp</th></tr></thead><tbody>
+    @foreach(var d in Model.Deposits)
+    {
+        <tr><td class="deposit-date"><time datetime="@d.Date.ToString("yyyy-MM-dd")"><span class="deposit-mobile">@d.Date.ToString("d MMM")</span><span class="deposit-desktop">@d.Date.ToString("yyyy-MM-dd")</span></time></td><td><a class="deposit-row-link" href="@(Access.IsOwner ? Url.Page("Edit", new { id = d.Id }) : null)">@d.Member.DisplayName<span class="deposit-note deposit-mobile">@(d.RuleId == null ? "Manuell" : "Automatisk")</span></a>@if(!string.IsNullOrWhiteSpace(d.Comment) && d.Comment != "Automatisk månadsinsättning") { <span class="deposit-note deposit-mobile">@d.Comment</span> }</td><td class="deposit-desktop">@(d.RuleId == null ? "Manuell" : "Automatisk")</td><td class="deposit-desktop">@d.Comment</td><td class="deposit-amount">@Money.Format(d.AmountOre)</td></tr>
+    }
+    </tbody></table></div>
+}
+</section>
+</div>

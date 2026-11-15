@@ -1,0 +1,29 @@
+@page
+@model Vasen.Web.Pages.Members.CleanupModel
+@{ ViewData["Title"] = "Rensa pausade konton"; }
+<div class="members-page narrow">
+<a class="back-link" asp-page="Index">← Användare</a>
+<h1>Rensa pausade konton</h1>
+<p class="hint">Endast ägare. Kontots namn och inloggningsuppgifter tas bort permanent. Kvitton, insättningar och historik behålls som Anonymiserad person. Namn i fritext och bilagor påverkas inte.</p>
+@if (Model.Member is {} member)
+{
+    <form method="post" class="panel stack member-form">
+        <h2>@member.DisplayName</h2>
+        <div asp-validation-summary="All" class="validation" role="alert"></div>
+        <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Stamp" />
+        <label class="check-label"><input asp-for="Confirm" required />Jag förstår att anonymiseringen inte kan ångras.</label>
+        <button class="button danger">Anonymisera kontot</button>
+        <a asp-page="Cleanup">Avbryt</a>
+    </form>
+}
+else if (Model.Members.Count == 0) { <p>Det finns inga pausade konton att rensa.</p> }
+else
+{
+    <div class="member-table-wrap"><table class="member-table"><thead><tr><th scope="col">Pausad person</th></tr></thead><tbody>
+    @foreach (var item in Model.Members)
+    {
+        <tr><td><a class="member-row-link" asp-page="Cleanup" asp-route-id="@item.Id">@item.DisplayName<span class="member-note">@item.Email</span></a></td></tr>
+    }
+    </tbody></table></div>
+}
+</div>

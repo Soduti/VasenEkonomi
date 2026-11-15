@@ -1,0 +1,4 @@
+@page
+@model Vasen.Web.Pages.ErrorModel
+@{ ViewData["Title"] = "Något gick fel"; }
+<section class="panel empty"><h1>Något gick fel</h1><p>Försök igen. Om felet kvarstår, ange referensen nedan för den som sköter servern.</p><p>@Model.RequestId</p><a asp-page="/Index" class="button primary">Till kvittona</a></section>

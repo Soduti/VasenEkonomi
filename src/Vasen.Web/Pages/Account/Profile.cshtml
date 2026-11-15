@@ -1,0 +1,14 @@
+@page
+@model Vasen.Web.Pages.Account.ProfileModel
+@{ ViewData["Title"] = "Mitt konto"; }
+<p class="eyebrow">MITT KONTO</p><h1>@Model.Member.DisplayName</h1><p class="muted">@Model.Member.Email · @Model.Member.AccessName</p>
+@if (Access.IsOwner) { <div class="section-gap"><a class="button primary" asp-page="/Members/Index">Användare</a></div> }
+<details class="panel narrow section-gap"><summary>Byt lösenord</summary><form method="post" class="stack">
+    <div asp-validation-summary="All" class="validation" role="alert"></div>
+    <label>Nuvarande lösenord<input asp-for="CurrentPassword" type="password" autocomplete="current-password" required /></label>
+    <label>Nytt lösenord<input asp-for="NewPassword" type="password" autocomplete="new-password" minlength="10" required /></label>
+    <p class="hint">Minst 10 tecken med stor och liten bokstav samt en siffra.</p>
+    <button class="button primary">Spara lösenord</button>
+</form></details>
+@if (Access.IsOwner) { <div class="section-gap"><a class="button secondary" asp-page="/Trash">Öppna papperskorgen</a></div> }
+<form method="post" asp-page-handler="Logout" class="section-gap"><button class="button secondary">Logga ut</button></form>

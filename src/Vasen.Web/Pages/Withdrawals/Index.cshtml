@@ -1,0 +1,6 @@
+@page
+@model Vasen.Web.Pages.Withdrawals.IndexModel
+@{ ViewData["Title"] = "Uttag"; }
+<p class="eyebrow">ERSÄTTNINGAR TILL OSS</p><h1>Registrerade uttag</h1><p class="muted">@(Access.IsOwner ? "Välj kvitton i kvittolistan för att registrera ett nytt uttag." : "Uttag som registrerats av ägarna.")</p>
+@if(Model.Withdrawals.Count == 0) { <section class="panel empty"><h2>Inga uttag ännu</h2><a class="button primary" asp-page="/Index" asp-route-status="unpaid">Visa oersatta kvitton</a></section> }
+@foreach(var w in Model.Withdrawals) { <a class="panel withdrawal-card" asp-page="Details" asp-route-id="@w.Id"><div><strong>@w.Member.DisplayName</strong><span class="muted">@w.Date.ToString("d MMM yyyy")</span>@if(w.OwnContributionOre > 0) { <span class="hint">Eget bidrag @Money.Format(w.OwnContributionOre)</span> }@if(w.IsUndone) { <span class="badge pending">Ångrat</span> }</div><strong>@Money.Format(w.AmountOre) →</strong></a> }

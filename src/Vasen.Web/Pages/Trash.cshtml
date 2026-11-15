@@ -1,0 +1,6 @@
+@page
+@model TrashModel
+@{ ViewData["Title"] = "Papperskorg"; }
+<p class="eyebrow">BORTTAGNA UTLÄGG</p><h1>Papperskorg</h1><p class="muted">Kvitton här ingår inte i summorna. De kan återställas eller raderas permanent.</p>
+@if(Model.Receipts.Count == 0) { <div class="panel empty"><h2>Papperskorgen är tom</h2></div> }
+@foreach(var r in Model.Receipts) { <article class="panel section-gap"><div class="receipt-top"><h2>@r.Description</h2><strong>@Money.Format(r.AmountOre)</strong></div><p class="muted">@r.Member.DisplayName · @r.Date.ToString("yyyy-MM-dd")</p><div class="actions"><form method="post"><input type="hidden" name="id" value="@r.Id" /><input type="hidden" name="version" value="@r.Version" /><button class="button secondary" name="action" value="restore">Återställ</button></form><form method="post" data-confirm="Radera kvittot och bilagorna permanent? Detta kan inte ångras."><input type="hidden" name="id" value="@r.Id" /><input type="hidden" name="version" value="@r.Version" /><button class="button danger" name="action" value="delete">Radera permanent</button></form></div></article> }

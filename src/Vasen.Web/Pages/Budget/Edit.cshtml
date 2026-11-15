@@ -1,0 +1,18 @@
+@page "{id:int?}"
+@model Vasen.Web.Pages.Budget.EditModel
+@using Vasen.Web.Models
+@{ var isPrivate = Model.Source == ExpenseSource.PrivateReceipt; ViewData["Title"] = isPrivate ? "Budget för privata utlägg" : "Fast kostnad"; }
+<div class="budget-page">
+<a class="back-link" asp-page="Index" asp-route-year="@Model.Year">← Till budgeten</a>
+<h1>@(isPrivate ? "Budget för privata utlägg" : Model.Id.HasValue ? "Ändra fast kostnad" : "Lägg till fast kostnad")</h1>
+<p class="hint">@(isPrivate ? "En gemensam årspott för alla privata kvitton, oavsett kostnadsslag." : "Planera ett årsbelopp för exempelvis el, lån eller försäkring.")</p>
+<form method="post" class="panel stack narrow budget-edit"><div asp-validation-summary="All" class="validation" role="alert"></div>
+<input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" /><input type="hidden" asp-for="Source" />
+<label>År<input asp-for="Year" type="number" min="2000" max="2100" required /></label>
+@if(isPrivate) { <input type="hidden" asp-for="Category" /> }
+else { <label>Kostnadsslag<input asp-for="Category" maxlength="80" list="budget-categories" required /><datalist id="budget-categories"><option>El</option><option>Lån</option><option>Försäkring</option><option>Vatten</option><option>Avfall</option></datalist></label> }
+<label>@(isPrivate ? "Budget för årets privata inköp (kr)" : "Årsbudget (kr)")<input asp-for="Amount" inputmode="decimal" placeholder="0,00" required /></label>
+<div class="actions"><button class="button primary">Spara budget</button><a class="button secondary" asp-page="Index" asp-route-year="@Model.Year">Avbryt</a></div>
+</form>
+@if(Model.Id.HasValue) { <form method="post" asp-page-handler="Delete" class="narrow section-gap" data-confirm="Ta bort det planerade beloppet? Registrerade utgifter och kvitton behålls."><input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" /><input type="hidden" asp-for="Year" /><button class="button danger">Ta bort budgetbelopp</button></form> }
+</div>

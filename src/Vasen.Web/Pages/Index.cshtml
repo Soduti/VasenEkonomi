@@ -1,0 +1,83 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Kvitton";
+    var currentMemberId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
+    var activeFilters = (string.IsNullOrEmpty(Model.Person) ? 0 : 1) + (Model.Status == "all" ? 0 : 1)
+        + (Model.From.HasValue ? 1 : 0) + (Model.To.HasValue ? 1 : 0)
+        + (string.IsNullOrEmpty(Model.Category) ? 0 : 1) + (Model.Sort == "date-desc" ? 0 : 1);
+}
+<div class="receipts-page">
+<div class="receipts-heading"><h1>Kvitton <span class="count">@Model.Receipts.Count</span></h1>@if (Access.CanRegisterReceipts) { <a class="button primary" asp-page="/Receipts/Edit" asp-route-returnUrl="@(Request.Path + Request.QueryString)"><span aria-hidden="true">＋</span> Lägg till kvitto</a> }</div>
+<dl class="receipt-totals" aria-label="Sammanställning av urval">
+    <div><dt>Summa i urvalet</dt><dd>@Money.Format(Model.Total)</dd></div>
+    <div><dt>Kvar att ersätta</dt><dd>@Money.Format(Model.Outstanding)</dd></div>
+</dl>
+<form method="get" id="receipt-quick-filters" class="receipt-quick-filters" data-current-member="@currentMemberId" aria-label="Snabbfilter för kvitton" hidden>
+    <input type="hidden" name="Person" value="@Model.Person" />
+    <input type="hidden" name="Status" value="@Model.Status" />
+    <input type="hidden" name="From" value="@Model.From?.ToString("yyyy-MM-dd")" />
+    <input type="hidden" name="To" value="@Model.To?.ToString("yyyy-MM-dd")" />
+    <input type="hidden" name="Category" value="@Model.Category" />
+    <input type="hidden" name="Sort" value="@Model.Sort" />
+    <label class="check-label"><input type="checkbox" id="quick-show-paid" checked="@(Model.Status != "unpaid")" />Visa ersatta</label>
+    <label class="check-label"><input type="checkbox" id="quick-only-mine" checked="@(Model.Person == currentMemberId)" />Bara mina kvitton</label>
+</form>
+<details class="receipt-filters"><summary>Filter och sortering @if (activeFilters > 0) { <span class="count">@activeFilters aktiva</span> }</summary>
+<form method="get" class="filter-grid">
+    <label>Person<select asp-for="Person"><option value="">Alla personer</option>@foreach (var m in Model.Members) { <option value="@m.Id">@m.DisplayName</option> }</select></label>
+    <label>Status<select asp-for="Status"><option value="all">Alla kvitton</option><option value="unpaid">Oersatta</option><option value="paid">Klara</option></select></label>
+    <label>Från datum<input asp-for="From" type="date" /></label><label>Till datum<input asp-for="To" type="date" /></label>
+    <label>Kostnadsslag<select asp-for="Category"><option value="">Alla kostnadsslag</option><option value="_none">Ej kategoriserat</option>@foreach(var c in Model.Categories) { <option>@c</option> }</select></label>
+    <label>Sortera<select asp-for="Sort"><option value="date-desc">Nyaste datum först</option><option value="date-asc">Äldsta datum först</option><option value="person-asc">Person A–Ö</option><option value="person-desc">Person Ö–A</option><option value="amount-desc">Högsta belopp först</option><option value="amount-asc">Lägsta belopp först</option></select></label>
+    <div class="quick-dates"><button type="button" class="text-button" data-period="month">Denna månad</button><button type="button" class="text-button" data-period="year">Detta år</button></div>
+    <div class="actions"><button class="button primary">Visa urval</button><a class="button secondary" asp-page="/Index">Rensa</a></div>
+</form></details>
+@if (Model.Receipts.Count == 0)
+{
+    <section class="receipt-empty"><h2>Inga kvitton i urvalet</h2><p class="hint">Lägg till ett kvitto eller ändra filtren.</p></section>
+}
+else
+{
+    @if (Access.IsOwner) { <p class="receipt-selection-hint hint" id="receipt-selection-hint">Markera oersatta kvitton för samma person för att avsluta dem tillsammans.</p> }
+    <form method="get" asp-page="@(Access.IsOwner ? "/Withdrawals/Create" : "/Index")" id="@(Access.IsOwner ? "selection-form" : null)">
+    <input type="hidden" name="returnUrl" value="@(Request.Path + Request.QueryString)" />
+    <div class="receipt-table-wrap">
+    <table class="receipt-table" aria-label="Kvitton i urvalet" aria-describedby="@(Access.IsOwner ? "receipt-selection-hint" : null)">
+        <thead><tr><th scope="col" class="receipt-check-cell"><span class="visually-hidden">Markera</span></th><th scope="col" class="receipt-wide receipt-date-cell">Datum</th><th scope="col">Kvitto</th><th scope="col" class="receipt-wide receipt-person-cell">Person</th><th scope="col" class="receipt-wide receipt-category-cell">Kostnadsslag</th><th scope="col" class="receipt-money-cell">Belopp</th><th scope="col" class="receipt-wide receipt-status-cell">Status</th></tr></thead>
+        <tbody>
+        @foreach (var r in Model.Receipts)
+        {
+            <tr>
+                <td class="receipt-check-cell">
+                @if (Access.IsOwner && r.WithdrawalId == null)
+                { <label class="receipt-check"><input type="checkbox" name="ids" value="@r.Id" data-ore="@r.AmountOre" data-person="@r.MemberId" aria-label="Markera @r.Description" /></label> }
+                else if (r.WithdrawalId != null) { <span class="receipt-paid" role="img" aria-label="Klart">✓</span> }
+                </td>
+                <td class="receipt-wide receipt-date-cell">@r.Date.ToString("yyyy-MM-dd")</td>
+                <td>
+                    <a class="receipt-row-link" asp-page="/Receipts/Edit" asp-route-id="@r.Id" asp-route-returnUrl="@(Request.Path + Request.QueryString)">
+                        <span class="receipt-row-title">@r.Description</span>
+                        <span class="receipt-row-meta receipt-mobile">@r.Date.ToString("d MMM yyyy") · @r.Member.DisplayName</span>
+                        <span class="receipt-row-meta"><span class="receipt-mobile">@(r.Category ?? "Ej kategoriserat")@(r.Files.Count == 0 ? " · " : "")</span>@if(r.Files.Count == 0) { <span class="missing">Saknar kvitto</span> }</span>
+                    </a>
+                </td>
+                <td class="receipt-wide">@r.Member.DisplayName</td>
+                <td class="receipt-wide">@(r.Category ?? "Ej kategoriserat")</td>
+                <td class="receipt-money-cell"><strong>@Money.Format(r.AmountOre)</strong><span class="receipt-mobile receipt-row-status"><span class="badge @(r.WithdrawalId == null ? "pending" : "settled")">@(r.WithdrawalId == null ? "Oersatt" : "Klart")</span></span></td>
+                <td class="receipt-wide"><span class="badge @(r.WithdrawalId == null ? "pending" : "settled")">@(r.WithdrawalId == null ? "Oersatt" : "Klart")</span></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    @if (Access.IsOwner) { <div class="selection-bar" id="selection-bar" hidden><div><strong id="selection-total">0 kr</strong><span id="selection-count" class="hint"></span></div><button class="button primary" id="reimburse-button">Avsluta valda</button><p id="selection-error" class="validation" role="alert"></p></div>
+    <noscript><button class="button primary section-gap">Avsluta markerade kvitton</button></noscript> }
+    </form>
+    <details class="receipt-person-totals"><summary>Summa per person</summary>
+        <table class="receipt-person-table"><thead><tr><th scope="col">Person</th><th scope="col">Summa i urvalet</th></tr></thead><tbody>
+        @foreach(var group in Model.Receipts.GroupBy(r => r.MemberId)) { <tr><th scope="row">@group.First().Member.DisplayName</th><td>@Money.Format(group.Sum(r => r.AmountOre))</td></tr> }
+        </tbody></table>
+    </details>
+}
+</div>

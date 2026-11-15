@@ -1,0 +1,102 @@
+@page "{id:int?}"
+@model Vasen.Web.Pages.Receipts.EditModel
+@{ ViewData["Title"] = Model.Id.HasValue ? "Visa kvitto" : "Nytt kvitto"; }
+<div class="receipts-page receipt-edit-page narrow">
+<a class="back-link" href="@Model.BackUrl">← Till kvittolistan</a>
+<h1>@(Model.Id.HasValue ? "Kvitto" : "Nytt kvitto")</h1>
+@if(Model.Receipt?.WithdrawalId is {} withdrawalId) { <div class="notice">Utlägget är klart. <a asp-page="/Withdrawals/Details" asp-route-id="@withdrawalId">Visa avslutet</a>. Rättelser ändrar inte utbetalt belopp eller eget bidrag.</div> }
+@if (!Model.CanEdit && Model.Receipt is {} readOnly)
+{
+    <section class="panel receipt-readonly">
+        <dl><dt>Belopp</dt><dd><strong>@Money.Format(readOnly.AmountOre)</strong></dd>
+        <dt>Beskrivning</dt><dd>@readOnly.Description</dd>
+        <dt>Kvittodatum</dt><dd>@readOnly.Date.ToString("yyyy-MM-dd")</dd>
+        <dt>Ansvarig för utlägget</dt><dd>@readOnly.Member.DisplayName</dd>
+        @if (readOnly.Category != null) { <dt>Kostnadsslag</dt><dd>@readOnly.Category</dd> }
+        @if (Model.RegisteredByName != null) { <dt>Registrerat av</dt><dd>@Model.RegisteredByName</dd> }</dl>
+        @if (readOnly.Files.Count > 0) { <div class="attachments">@foreach (var file in readOnly.Files) { <a asp-page="/Receipts/File" asp-route-id="@file.Id" target="_blank" rel="noopener">↗ @file.OriginalName</a> }</div> }
+        else { <span class="missing">Saknar kvitto</span> }
+    </section>
+}
+else
+{
+<form method="post" enctype="multipart/form-data" class="panel stack receipt-edit-form">
+    <div asp-validation-summary="All" class="validation" role="alert"></div>
+    <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" /><input type="hidden" asp-for="ReturnUrl" />
+    <label>Belopp (kr)<input asp-for="Amount" type="text" inputmode="decimal" placeholder="0,00" required class="amount-input" /></label>
+    <label>Beskrivning<input asp-for="Description" maxlength="300" placeholder="Till exempel färg till verandan" required /></label>
+    <div class="receipt-fields">
+        <label>Kvittodatum<input asp-for="Date" type="date" required /></label>
+        @if(Model.Receipt is null) { <label>Ansvarig för utlägget<select asp-for="Person">@foreach(var m in Model.Members) { <option value="@m.Id">@m.DisplayName</option> }</select></label> }
+        else { <input type="hidden" asp-for="Person" /><div class="receipt-fixed-person"><span class="field-label">Ansvarig</span><strong>@Model.Receipt.Member.DisplayName</strong></div> }
+    </div>
+    @if(Model.Receipt is {} r && r.Files.Count > 0)
+    {
+        <div class="attachments">@foreach(var file in r.Files) { <a asp-page="/Receipts/File" asp-route-id="@file.Id" target="_blank" rel="noopener">↗ @file.OriginalName</a> }</div>
+    }
+    <div class="receipt-upload">
+        <label for="Uploads">@(Model.Id.HasValue ? "Lägg till kvittofil" : "Fotografera eller välj kvitto") <span class="hint">(valfritt)</span></label>
+        <input asp-for="Uploads" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" aria-describedby="receipt-file-help" />
+        @if(Model.Receipt is {} receipt && receipt.Files.Count == 0) { <span class="missing">Saknar kvitto</span> }
+        <div id="file-previews" aria-live="polite"></div>
+        <section id="receipt-ocr" class="receipt-ocr" aria-label="Avläsning av kvitto" data-ocr-base="@Url.Content("~/lib/tesseract/")" data-ocr-worker="@Url.Content("~/js/receipt-ocr-worker.js")" hidden>
+            <p class="hint" data-ocr-status role="status" aria-live="polite"></p>
+            <button type="button" class="text-button" data-ocr-cancel hidden>Avbryt avläsning</button>
+            <div data-ocr-results hidden>
+                <div class="ocr-suggestion">
+                    <label>Datumförslag<select data-ocr-date></select></label>
+                    <button type="button" class="button secondary" data-ocr-use-date>Använd datum</button>
+                </div>
+                <div class="ocr-suggestion">
+                    <label>Beloppsförslag (kr)<select data-ocr-amount></select></label>
+                    <button type="button" class="button secondary" data-ocr-use-amount>Använd belopp</button>
+                </div>
+            </div>
+        </section>
+    </div>
+    <dialog id="receipt-crop" class="receipt-crop" aria-labelledby="crop-title" aria-describedby="crop-help">
+        <h2 id="crop-title">Beskär kvittobilden</h2>
+        <p id="crop-help" class="hint">Dra hörnen eller kanterna runt kvittot. Dra inuti ramen för att flytta den.</p>
+        <p id="crop-filename" class="hint"></p>
+        <canvas id="crop-canvas" aria-label="Kvittobild med beskärningsram. Använd finjusteringen för att ange kanterna med tangentbord."></canvas>
+        <div class="crop-tools">
+            <button type="button" class="button secondary" id="crop-rotate">Rotera 90°</button>
+            <button type="button" class="button secondary" id="crop-reset">Återställ</button>
+        </div>
+        <details class="crop-precision"><summary>Finjustera kanter</summary>
+            <div class="crop-edges">
+                <label>Vänster (%)<input id="crop-left" type="number" min="0" max="99" step="1" /></label>
+                <label>Överkant (%)<input id="crop-top" type="number" min="0" max="99" step="1" /></label>
+                <label>Höger (%)<input id="crop-right" type="number" min="1" max="100" step="1" /></label>
+                <label>Underkant (%)<input id="crop-bottom" type="number" min="1" max="100" step="1" /></label>
+            </div>
+        </details>
+        <p id="crop-error" class="validation" role="alert"></p>
+        <div class="crop-actions">
+            <button type="button" class="button primary" id="crop-apply">Använd beskärning</button>
+            <button type="button" class="button secondary" id="crop-original">Behåll hela bilden</button>
+            <button type="button" class="text-button" id="crop-cancel">Avbryt</button>
+        </div>
+    </dialog>
+    <details class="receipt-extra" open="@(ViewData.ModelState["Category"]?.Errors.Count > 0 ? "open" : null)"><summary>@(string.IsNullOrEmpty(Model.Category) ? "Kostnadsslag och hjälp" : "Kostnadsslag: " + Model.Category)</summary>
+        @if (Model.RegisteredByName != null) { <p class="hint">Registrerat av @Model.RegisteredByName.</p> }
+        <label>Kostnadsslag (valfritt)<input asp-for="Category" maxlength="80" list="categories" placeholder="Ej kategoriserat" /><datalist id="categories"><option>Verktyg</option><option>Färg</option><option>Virke</option><option>Övrigt underhåll</option></datalist></label>
+        <p class="hint" id="receipt-file-help">Bilagor är valfria. JPG, PNG, WebP eller PDF, högst 10 MB per fil. Ägare och behöriga registrerare kan rätta uppgifterna. Ändringar sparas i historiken.</p>
+    </details>
+    <div class="receipt-form-actions"><button class="button primary">Spara utlägg</button><a class="button secondary" href="@Model.BackUrl">Avbryt</a></div>
+</form>
+}
+@if(Model.Id.HasValue)
+{
+    <details class="panel receipt-secondary"><summary>Ändringshistorik</summary>@foreach(var entry in Model.History) { <div class="history-entry"><strong>@entry.Action</strong><time>@entry.AtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time><details><summary>Visa uppgifter</summary><pre>@entry.Detail</pre></details></div> }</details>
+    @if (Access.IsOwner) { <details class="panel receipt-secondary"><summary>Fler åtgärder</summary>
+        <form method="post" asp-page-handler="Trash" data-confirm="Flytta kvittot till papperskorgen? Det kan återställas."><input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" /><input type="hidden" asp-for="ReturnUrl" /><button class="button danger">Flytta till papperskorgen</button></form>
+    </details> }
+}
+</div>
+
+@section Scripts {
+    <script src="~/js/receipt-ocr-parser.js" asp-append-version="true" defer></script>
+    <script src="~/js/receipt-ocr.js" asp-append-version="true" defer></script>
+    <script src="~/js/receipt-crop.js" asp-append-version="true" defer></script>
+}

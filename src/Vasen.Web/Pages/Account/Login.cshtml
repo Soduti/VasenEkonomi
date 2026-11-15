@@ -1,0 +1,16 @@
+@page
+@model Vasen.Web.Pages.Account.LoginModel
+@{ ViewData["Title"] = "Logga in"; }
+<section class="login-intro"><p class="eyebrow">VÄLKOMMEN TILL VASEN</p><h1>Lite mindre pappersarbete.<br />Mer tid på landet.</h1><p class="muted">Samla våra kvitton och håll koll på gemensamma utlägg.</p></section>
+<section class="panel narrow">
+    <h2>Logga in</h2>
+    <form method="post" class="stack">
+        <div asp-validation-summary="All" class="validation" role="alert"></div>
+        <input type="hidden" asp-for="ReturnUrl" />
+        <label>Namn eller e-post<input asp-for="LoginName" autocomplete="username" autocapitalize="none" spellcheck="false" required /></label>
+        <label>Lösenord<input asp-for="Password" type="password" autocomplete="current-password" required /></label>
+        <label class="check-label"><input asp-for="RememberMe" />Kom ihåg mig på den här enheten</label>
+        <button class="button primary" type="submit">Logga in <span aria-hidden="true">→</span></button>
+        <p class="hint">Använd ditt eget konto. Saknar du inloggning eller har glömt lösenordet? Be någon av de andra om hjälp.</p>
+    </form>
+</section>
