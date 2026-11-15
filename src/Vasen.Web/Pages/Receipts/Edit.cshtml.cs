@@ -14,6 +14,7 @@ public class EditModel(VasenDb db, ReceiptService service, RequestAccess access)
     [BindProperty] public Guid Version { get; set; }
     [BindProperty] public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     [BindProperty, Required(ErrorMessage = "Välj en person.")] public string Person { get; set; } = "";
+    [BindProperty] public bool IsReturn { get; set; }
     [BindProperty, Required(ErrorMessage = "Ange ett belopp.")] public string Amount { get; set; } = "";
     [BindProperty, Required(ErrorMessage = "Ange en beskrivning."), StringLength(300)] public string Description { get; set; } = "";
     [BindProperty, StringLength(80)] public string? Category { get; set; }
@@ -37,14 +38,15 @@ public class EditModel(VasenDb db, ReceiptService service, RequestAccess access)
     public async Task<IActionResult> OnGetAsync()
     {
         if (!await LoadAsync()) return NotFound();
-        if (Receipt is {} r) { Version = r.Version; Date = r.Date; Person = r.MemberId; Amount = Money.Input(r.AmountOre); Description = r.Description; Category = r.Category; }
+        if (Receipt is {} r) { Version = r.Version; Date = r.Date; Person = r.MemberId; IsReturn = r.AmountOre < 0; Amount = Money.Input(Math.Abs(r.AmountOre)); Description = r.Description; Category = r.Category; }
         else Person = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         return Page();
     }
     public async Task<IActionResult> OnPostAsync()
     {
         if (!await LoadAsync()) return NotFound();
-        if (!Money.TryParse(Amount, out var ore)) ModelState.AddModelError(nameof(Amount), "Ange ett positivt belopp med högst två decimaler.");
+        if (!Money.TryParseSigned(Amount, out var ore) || ore == 0) ModelState.AddModelError(nameof(Amount), "Ange ett belopp skilt från noll med högst två decimaler.");
+        if (IsReturn) ore = -Math.Abs(ore);
         if (!ModelState.IsValid) return Page();
         try
         {

@@ -34,7 +34,7 @@ Användaren ska kunna fotografera eller välja filer från mobilen och fylla i:
 
 - Kvittodatum, förvalt till dagens datum.
 - Person som gjort utlägget, förvalt till den inloggade.
-- Totalbelopp i kronor.
+- Totalbelopp i kronor. Returer registreras som separata negativa kvitton och minskar utlägg och budgetutfall på returdatumet. Köp och returer kan kvittas vid avslut för samma person; nollsumma kan avslutas utan uttag och negativ summa med återbetalning.
 - Beskrivning (obligatorisk).
 - Kostnadsslag (valfritt), exempelvis verktyg, färg, virke eller övrigt underhåll. Utlägg utan kostnadsslag visas som Ej kategoriserat och ingår i totalsummorna.
 - Noll eller flera kvittobilder eller PDF-filer. Utlägg utan bilaga tillåts och märks tydligt med Saknar kvitto.

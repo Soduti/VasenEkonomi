@@ -52,13 +52,19 @@ public class ReceiptService(VasenDb db, FileStore files)
     {
         await AccessRules.RequireOwnerAsync(db, actor);
         if (ids.Length == 0 || ids.Length != ids.Distinct().Count()) throw new InvalidOperationException("Markera minst ett kvitto.");
-        Validate(date, amount, "Ersättning", null, allowZero: countDifferenceAsOwnContribution);
+        Validate(date, amount, "Ersättning", null, allowZero: true);
         if (comment?.Length > 300) throw new InvalidOperationException("Kommentaren får vara högst 300 tecken.");
         await using var tx = await db.Database.BeginTransactionAsync();
         var receipts = await db.Receipts.Where(r => ids.Contains(r.Id) && r.DeletedUtc == null && r.WithdrawalId == null).ToListAsync();
         if (receipts.Count != ids.Length) throw new InvalidOperationException("Urvalet har ändrats. Något kvitto är redan ersatt eller borttaget.");
         if (receipts.Select(r => r.MemberId).Distinct().Count() != 1) throw new InvalidOperationException("Välj kvitton för en person åt gången.");
         var receiptTotal = receipts.Sum(r => r.AmountOre);
+        if (amount == 0 && receiptTotal != 0 && !countDifferenceAsOwnContribution)
+            throw new InvalidOperationException("Nollbelopp kräver att kvittona tar ut varandra eller att eget bidrag väljs.");
+        if (amount < 0 && receiptTotal >= 0)
+            throw new InvalidOperationException("Återbetalning kräver en negativ kvittosumma.");
+        if (countDifferenceAsOwnContribution && (amount < 0 || receiptTotal <= 0))
+            throw new InvalidOperationException("Eget bidrag kräver en positiv kvittosumma och ett uttag som inte är negativt.");
         if (countDifferenceAsOwnContribution && amount > receiptTotal)
             throw new InvalidOperationException("Uttaget får inte överstiga kvittosumman när skillnaden ska räknas som eget bidrag.");
         var withdrawal = new Withdrawal { MemberId = receipts[0].MemberId, Date = date, AmountOre = amount,
@@ -114,7 +120,7 @@ public class ReceiptService(VasenDb db, FileStore files)
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static void Validate(DateOnly date, long ore, string description, string? category, bool allowZero = false)
     {
-        if (date == default || ore < (allowZero ? 0 : 1) || ore > 10_000_000_000 || string.IsNullOrWhiteSpace(description) || description.Length > 300 || category?.Length > 80)
+        if (date == default || (!allowZero && ore == 0) || ore < -10_000_000_000 || ore > 10_000_000_000 || string.IsNullOrWhiteSpace(description) || description.Length > 300 || category?.Length > 80)
             throw new InvalidOperationException("Kontrollera datum, belopp, beskrivning och kostnadsslag.");
     }
 }

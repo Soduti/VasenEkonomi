@@ -24,6 +24,7 @@ else
     <div asp-validation-summary="All" class="validation" role="alert"></div>
     <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Version" /><input type="hidden" asp-for="ReturnUrl" />
     <label>Belopp (kr)<input asp-for="Amount" type="text" inputmode="decimal" placeholder="0,00" required class="amount-input" /></label>
+    <label class="check-label"><input asp-for="IsReturn" />Retur – beloppet dras av från utläggen</label>
     <label>Beskrivning<input asp-for="Description" maxlength="300" placeholder="Till exempel färg till verandan" required /></label>
     <div class="receipt-fields">
         <label>Kvittodatum<input asp-for="Date" type="date" required /></label>

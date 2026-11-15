@@ -160,3 +160,11 @@ Se README.md för lokala startkommandon och IIS-inställningar. IMPLEMENTATIONSP
 - Budgetvyn visar antalet aktiva ägare. Om ingen aktiv ägare finns visas att förslaget inte kan beräknas, utan division med noll.
 - Befintliga insättningar, ekonomisk historik och månadsregler skrivs inte om när förslaget räknas om. Månadsregler justeras separat som tidigare.
 - Testet för treägargränsen ersattes med ett test som lägger till fjärde och femte ägaren. Sju tillkommande budgetfall täcker 0/1/2/3/4/7 ägare, avrundning samt paus och avmarkering. Samtliga 75 .NET-tester passerar.
+
+## Returer och negativa utlägg (2026-11-15)
+
+- Returval i kvittoformuläret låter användaren ange ett positivt belopp med mobilens decimaltangentbord och lagrar det negativt. Direkt negativ inmatning fungerar också. Befintliga returer öppnas med returvalet markerat.
+- Returer minskar list- och personsummor, oersatta nettoutlägg och budgetutfall enligt returens kvittodatum. Originalkvittot och tidigare utbetalningar bevaras.
+- Köp och returer kan avslutas tillsammans för samma person, inklusive nollsumma. Negativ kvittosumma kan avslutas med negativt utbetalningsbelopp som återbetalning till det gemensamma kontot. Inga bankinsättningar eller egna bidrag skapas för återbetalningar.
+- Befintlig datamodell används utan migrering. OCR identifierar inte automatiskt returer; returval och belopp kontrolleras manuellt.
+- Samtliga 85 .NET-tester passerar, inklusive nya fall för positiv/noll/negativ nettosumma, returval och avslut genom HTTP-formulären, budget, rättelse, papperskorg, återställning och ångring. Ingen driftsättning har gjorts.

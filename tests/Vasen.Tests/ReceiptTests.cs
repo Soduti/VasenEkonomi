@@ -39,6 +39,52 @@ public class ReceiptTests : IAsyncLifetime
     [InlineData("-1")] [InlineData("1,234")] [InlineData("0")] [InlineData("abc")] [InlineData("100000001")]
     public void InvalidAmountsAreRejected(string input) => Assert.False(Money.TryParse(input,out _));
 
+    [Theory]
+    [InlineData(30000, 70000)]
+    [InlineData(100000, 0)]
+    [InlineData(130000, -30000)]
+    public async Task ReturnsReduceExpensesAndCanSettlePositiveZeroOrNegativeTotals(long returned, long net)
+    {
+        var purchase = await Create(ore:100000);
+        var refund = await Create(ore:-returned);
+        var summaries = new BudgetSummaryService(db);
+        var summary = await summaries.ForYearAsync(2026);
+        Assert.Equal(net, summary.ActualOre); Assert.Equal(net, summary.OutstandingOre);
+        var wid = await service.ReimburseAsync([purchase,refund],new(2026,12,21),net,null,Anna);
+        var withdrawal = await db.Withdrawals.SingleAsync();
+        Assert.Equal(net, withdrawal.AmountOre); Assert.Equal(net, withdrawal.OriginalReceiptTotalOre);
+        Assert.Equal(0, withdrawal.OwnContributionOre);
+        summary = await summaries.ForYearAsync(2026);
+        Assert.Equal(net, summary.ActualOre); Assert.Equal(0, summary.OutstandingOre);
+        Assert.Equal(0, summary.DepositsOre); Assert.Equal(0, summary.OwnContributionOre);
+        await service.UndoAsync(wid,withdrawal.Version,Anna);
+        Assert.Equal(net,(await summaries.ForYearAsync(2026)).OutstandingOre);
+        var receipt = await db.Receipts.SingleAsync(r => r.Id == refund);
+        await service.EditAsync(refund,receipt.Version,receipt.Date,-20000,"Rättad retur",null,[],Anna);
+        Assert.Equal(80000,(await summaries.ForYearAsync(2026)).ActualOre);
+        await service.TrashAsync(refund,receipt.Version,false,Anna);
+        Assert.Equal(100000,(await summaries.ForYearAsync(2026)).ActualOre);
+        await service.TrashAsync(refund,receipt.Version,true,Anna);
+        Assert.Equal(80000,(await summaries.ForYearAsync(2026)).ActualOre);
+    }
+
+    [Fact]
+    public async Task ReturnCannotCreateOwnContribution()
+    {
+        var refund = await Create(ore:-30000);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ReimburseAsync([refund],new(2026,12,21),-30000,null,Anna,true));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ReimburseAsync([refund],new(2026,12,21),0,null,Anna,true));
+        Assert.Empty(await db.Withdrawals.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(-10000000001)] [InlineData(long.MinValue)]
+    public async Task InvalidReceiptAmountsAreRejectedByService(long ore)
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Create(ore:ore));
+        Assert.Empty(await db.Receipts.ToListAsync());
+    }
+
     [Fact]
     public async Task MissingAttachmentAndCategoryAreAllowed()
     {

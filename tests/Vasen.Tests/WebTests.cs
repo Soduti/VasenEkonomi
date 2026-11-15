@@ -50,6 +50,46 @@ public class WebTests
         Assert.Equal(HttpStatusCode.Redirect,loggedOut.StatusCode);
         Assert.Equal(HttpStatusCode.Redirect,(await client.GetAsync("/")).StatusCode);
     }
+    [Theory]
+    [InlineData("30", "70", 7000)]
+    [InlineData("100", "0", 0)]
+    [InlineData("130", "-30", -3000)]
+    public async Task ReturnCheckboxAndSignedSettlementWorkThroughForms(string returned, string net, long expected)
+    {
+        using var factory = new VasenFactory();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var scope = factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Member>>();
+        var owner = new Member { DisplayName="Returägare",UserName="returns@example.test",Email="returns@example.test",IsOwner=true };
+        Assert.True((await users.CreateAsync(owner,"TestPassword123")).Succeeded);
+        var login = await client.GetStringAsync("/Account/Login");
+        Assert.Equal(HttpStatusCode.Redirect,(await client.PostAsync("/Account/Login",Form(login,new() { ["LoginName"]=owner.Email,["Password"]="TestPassword123" }))).StatusCode);
+        foreach (var isReturn in new[] { false, true })
+        {
+            var form = await client.GetStringAsync("/Receipts/Edit");
+            Assert.Contains("Retur",form);
+            var result = await client.PostAsync("/Receipts/Edit",Form(form,new() {
+                ["Date"]="2026-12-20",["Person"]=owner.Id,["Amount"]=isReturn ? returned : "100",
+                ["IsReturn"]=isReturn.ToString(),["Description"]=isReturn ? "Retur" : "Köp" }));
+            Assert.Equal(HttpStatusCode.Redirect,result.StatusCode);
+        }
+        var db = scope.ServiceProvider.GetRequiredService<VasenDb>();
+        var receipts = await db.Receipts.OrderBy(r => r.Id).ToListAsync();
+        Assert.True(receipts[1].AmountOre < 0);
+        var edit = await client.GetStringAsync($"/Receipts/Edit/{receipts[1].Id}");
+        Assert.Matches("checked=\"checked\"[^>]*id=\"IsReturn\"",edit);
+        var url = $"/Withdrawals/Create?ids={receipts[0].Id}&ids={receipts[1].Id}";
+        var settlement = await client.GetStringAsync(url);
+        var content = Form(settlement,new() { ["Date"]="2026-12-21",["Amount"]=net });
+        content = new FormUrlEncodedContent((await content.ReadAsStringAsync()).Split('&').Select(pair => pair.Split('=',2))
+            .Select(pair => new KeyValuePair<string,string>(WebUtility.UrlDecode(pair[0]),WebUtility.UrlDecode(pair[1])))
+            .Concat(receipts.Select(r => new KeyValuePair<string,string>("Ids",r.Id.ToString()))));
+        Assert.Equal(HttpStatusCode.Redirect,(await client.PostAsync("/Withdrawals/Create",content)).StatusCode);
+        Assert.Equal(expected,(await db.Withdrawals.SingleAsync()).AmountOre);
+        var summary = await new BudgetSummaryService(db).ForYearAsync(2026);
+        Assert.Equal(expected,summary.ActualOre); Assert.Equal(0,summary.OutstandingOre);
+    }
+
     [Fact]
     public async Task OcrAssetsAndWebAssemblyPolicyAreAvailableLocally()
     {

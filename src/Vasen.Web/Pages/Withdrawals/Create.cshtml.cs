@@ -31,8 +31,8 @@ public class CreateModel(VasenDb db, ReceiptService service) : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         await LoadAsync();
-        if (!Money.TryParseNonNegative(Amount, out var ore) || (ore == 0 && !CountDifferenceAsOwnContribution))
-            ModelState.AddModelError(nameof(Amount), "Ange ett positivt uttag, eller välj eget bidrag om hela kvittot bekostas privat.");
+        if (!Money.TryParseSigned(Amount, out var ore))
+            ModelState.AddModelError(nameof(Amount), "Ange ett belopp med högst två decimaler.");
         if (!ModelState.IsValid) return Page();
         try
         {

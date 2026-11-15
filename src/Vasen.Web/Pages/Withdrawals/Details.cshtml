@@ -2,7 +2,7 @@
 @model Vasen.Web.Pages.Withdrawals.DetailsModel
 @{ ViewData["Title"] = "Uttag"; var w = Model.Withdrawal; }
 <a class="back-link" asp-page="Index">← Alla uttag</a><h1>@w.Member.DisplayName</h1><p class="muted">@w.Date.ToString("d MMMM yyyy") · Avslut #@w.Id</p>
-<section class="panel stack narrow settlement-panel"><div><span class="field-label">Utbetalt belopp</span><strong class="hero-amount">@Money.Format(w.AmountOre)</strong></div>
+<section class="panel stack narrow settlement-panel"><div><span class="field-label">@(w.AmountOre < 0 ? "Återbetalning (negativt belopp)" : "Utbetalt belopp")</span><strong class="hero-amount">@Money.Format(w.AmountOre)</strong></div>
 @if(w.IsUndone) { <div class="notice">Avslutet är ångrat. Eget bidrag från detta avslut räknas inte längre med.</div> }
 else
 {

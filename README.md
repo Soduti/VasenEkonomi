@@ -177,3 +177,11 @@ Uppgraderingen **AddAccessLevels** behåller befintliga ägare och ger befintlig
 Öppna **Mitt konto → Användare**, välj personen, kryssa i **Ägare** och tryck **Spara uppgifter**. Avmarkera samma ruta för att göra en ägare till vanlig medlem. Ingen maxgräns finns för antalet ägare. Nya konton får läsbehörighet som standard; ägaren kan välja Kvittoregistrerare.
 
 Ändringen sparas i historiken. Tidigare kvitton och insättningar behålls och kan rättas även efter avmarkering. Månadsregler skapar inte insättningar under perioder då personen saknar ägarmarkering, och sådana perioder fylls inte i retroaktivt vid ny markering.
+
+## Returer och negativa utlägg
+
+Registrera returkvittot som en egen post för personen som fått återbetalningen. Ange beloppet och markera **Retur**; det sparas negativt och minskar kvittolistan, personens oersatta nettoutlägg och budgetutfallet på returens kvittodatum. Även ett direkt inmatat negativt belopp accepteras. Originalkvittot behöver inte ändras, även om det redan är ersatt.
+
+Köp 1 000 kr och retur 300 kr ger 700 kr i nettoutlägg. Köp och returer för samma person kan avslutas tillsammans. Nolluttag tillåts när kvittosumman är noll. En negativ kvittosumma kan avslutas med ett negativt utbetalt belopp: det betyder att personen betalat tillbaka till det gemensamma kontot. Beloppet sparas i avslutet och skapar ingen bankinsättning eller eget bidrag. Eget bidrag kräver positiv kvittosumma och icke-negativt uttag.
+
+Rättelse, papperskorg, återställning och ångrat avslut fungerar även för returer. Budgetutfallet följer returdatumets år, så en retur året efter köpet minskar det senare årets utgifter. OCR identifierar inte automatiskt returer; välj Retur och kontrollera beloppet manuellt.
