@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '../..');
 process.chdir(root);
 fs.mkdirSync('artifacts/access-check', { recursive: true });
 
-const fixtures = new Set(['reader-list','reader-budget','reader-receipt','registrar-receipt','owner-member']);
+const fixtures = new Set(['reader-list','reader-budget','reader-receipt','registrar-receipt','owner-member','owner-expenses','owner-expense-edit','owner-list']);
 const server=http.createServer((req,res)=>{
     const route=decodeURIComponent(req.url.split('?')[0]);
     if(route==='/favicon.ico'){res.writeHead(204);res.end();return;}
@@ -57,20 +57,34 @@ const server=http.createServer((req,res)=>{
     try {
         const target=await send('Target.createTarget',{url:'about:blank'},null);
         session=(await send('Target.attachToTarget',{targetId:target.targetId,flatten:true},null)).sessionId;
-        await send('Runtime.enable');await send('Log.enable');await send('Page.enable');
+        await send('Runtime.enable');await send('Log.enable');await send('Page.enable');await send('DOM.enable');await send('CSS.enable');
         for(const name of fixtures){
             for(const [width,height] of [[320,740],[390,844],[1280,900]]){
                 await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});
                 await send('Page.navigate',{url:'http://127.0.0.1:'+port+'/'+name});
                 await wait('document.readyState==="complete"');
                 assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,name+' overflow '+width);
-                assert.equal(await evaluate('document.querySelectorAll(".bottom-nav a").length'),name.startsWith('reader')?4:5,name+' nav');
+                assert.equal(await evaluate('document.querySelectorAll(".bottom-nav a").length'),name.startsWith('reader')?5:6,name+' nav');
+                assert.equal(await evaluate('Array.from(document.querySelectorAll(".bottom-nav a")).some(a => a.getAttribute("href") === "/Expenses")'),true,name+' direct expenses link');
+                assert.equal(await evaluate('Array.from(document.querySelectorAll(".bottom-nav a")).every(a => a.getBoundingClientRect().height >= 44 && a.scrollWidth <= a.clientWidth)'),true,name+' nav touch targets '+width);
+                if(name.startsWith('owner-expense'))assert.equal(await evaluate('document.querySelector(".bottom-nav a.active").getAttribute("href")'),'/Expenses');
                 if(name.startsWith('reader')){
                     assert.equal(await evaluate('document.querySelectorAll("input[type=file],input[name=ids],button[id=reimburse-button]").length'),0,name+' mutating controls');
                     assert.equal(await evaluate('Array.from(document.querySelectorAll("a")).some(a => a.getAttribute("href") === "/Receipts/Edit")'),false,name+' new receipt link');
                 }
                 if(name==='registrar-receipt')assert.equal(await evaluate('!!document.querySelector("input[type=file]")'),true);
                 if(name==='owner-member')assert.equal(await evaluate('document.querySelector("#AccessLevel").options.length'),2);
+                if(name==='owner-list'){
+                    await evaluate('document.querySelector("input[name=ids]").click()');
+                    assert.equal(await evaluate('document.querySelector("#reimburse-button").textContent'),'Registrera uttag/klar...');
+                    const doc=await send('DOM.getDocument');
+                    const {nodeId}=await send('DOM.querySelector',{nodeId:doc.root.nodeId,selector:'#reimburse-button'});
+                    for(const state of ['hover','focus-visible']){
+                        await send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:[state]});
+                        assert.equal(await evaluate('(() => { const b=document.querySelector("#reimburse-button"),s=getComputedStyle(b); return s.color!==s.backgroundColor && s.backgroundColor!==getComputedStyle(b.closest(".selection-bar")).backgroundColor; })()'),true,'readable settlement button '+state+' '+width);
+                    }
+                    await send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:[]});
+                }
                 const shot=await send('Page.captureScreenshot',{format:'png'});
                 fs.writeFileSync('artifacts/access-check/'+name+'-'+width+'.png',Buffer.from(shot.data,'base64'));
             }

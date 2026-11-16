@@ -168,3 +168,11 @@ Se README.md för lokala startkommandon och IIS-inställningar. IMPLEMENTATIONSP
 - Köp och returer kan avslutas tillsammans för samma person, inklusive nollsumma. Negativ kvittosumma kan avslutas med negativt utbetalningsbelopp som återbetalning till det gemensamma kontot. Inga bankinsättningar eller egna bidrag skapas för återbetalningar.
 - Befintlig datamodell används utan migrering. OCR identifierar inte automatiskt returer; returval och belopp kontrolleras manuellt.
 - Samtliga 85 .NET-tester passerar, inklusive nya fall för positiv/noll/negativ nettosumma, returval och avslut genom HTTP-formulären, budget, rättelse, papperskorg, återställning och ångring. Ingen driftsättning har gjorts.
+
+## Gemensamma utgifter och ångrade uttag (2026-11-16)
+
+- Utgifter finns direkt i huvudmenyn. Nytt privat utlägg är tydligt åtskilt från registrering av betalningar från gemensamt konto. Budgetens genväg finns kvar.
+- Gemensamma utgifter visas i en kompakt tabell med kommentar under kostnadsslaget, betalt belopp och totalsumma. Posterna är redan reglerade och skapar varken privata kvitton eller personuttag; befintlig datamodell och summering återanvänds utan migrering.
+- Ångrade uttag utesluts ur uttagslistan. Historik och detaljvy bevaras. Budgeten utesluter fortsatt bidrag från ångrade avslut och kvitton i papperskorgen.
+- Regressionstester täcker registrering, rättelse och makulering av gemensam utgift samt kvitto → avslut → ångring → papperskorg. Ett fortfarande giltigt uttag behålls om kvittot tas bort.
+- Samtliga 88 .NET-tester passerar. Webbläsarkontrollen omfattar huvudmenyn, utgiftsvyer och befintliga behörighetsvyer vid 320, 390 och 1280 pixlar, utan sidledsrullning. Ingen driftsättning eller kontroll på fysisk mobil har gjorts.

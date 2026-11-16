@@ -96,6 +96,23 @@ public class FinanceTests : IAsyncLifetime
         await Assert.ThrowsAsync<InvalidOperationException>(() => finance.SaveBudgetAsync(null,Guid.Empty,2026,ExpenseSource.SharedAccount," el ",10000,"a"));
     }
     [Fact]
+    public async Task DirectAccountExpenseCanBeCorrectedAndVoidedWithoutCreatingReceiptsOrWithdrawals()
+    {
+        var id = await finance.SaveExpenseAsync(null,Guid.Empty,2026,"El",120000,"Autogiro","a");
+        var item = (await db.SharedExpenses.FindAsync(id))!;
+        var list = new Vasen.Web.Pages.Expenses.IndexModel(db,TimeProvider.System) { Year=2026 };
+        await list.OnGetAsync(); Assert.Single(list.Expenses);
+        Assert.Equal(120000,(await summaries.ForYearAsync(2026)).ActualOre);
+        await finance.SaveExpenseAsync(id,item.Version,2026,"El",130000,"Rättat autogiro","a");
+        await list.OnGetAsync(); Assert.Equal(130000,Assert.Single(list.Expenses).AmountOre);
+        var summary = await summaries.ForYearAsync(2026);
+        Assert.Equal(130000,summary.ActualOre); Assert.Equal(0,summary.OutstandingOre); Assert.Equal(0,summary.OwnContributionOre);
+        await finance.VoidExpenseAsync(id,item.Version,"a");
+        await list.OnGetAsync(); Assert.Empty(list.Expenses);
+        Assert.Equal(0,(await summaries.ForYearAsync(2026)).ActualOre);
+        Assert.Empty(await db.Receipts.ToListAsync()); Assert.Empty(await db.Withdrawals.ToListAsync());
+    }
+    [Fact]
     public async Task VoidedEntriesAndTrashedReceiptsAreExcluded()
     {
         var eid = await finance.SaveExpenseAsync(null,Guid.Empty,2026,"El",10000,null,"a");

@@ -36,6 +36,9 @@ public class WebTests
         Assert.Equal(HttpStatusCode.Redirect,saved.StatusCode);
         var list = await client.GetStringAsync("/");
         Assert.Contains("Virke till bryggan",list); Assert.Contains("Saknar kvitto",list);
+        var artifacts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../artifacts/access-check"));
+        Directory.CreateDirectory(artifacts);
+        await File.WriteAllTextAsync(Path.Combine(artifacts,"owner-list.html"),list);
         Assert.Contains("Testägare",WebUtility.HtmlDecode(list));
         var filtered = await client.GetStringAsync("/?From=2027-01-01&Status=unpaid");
         Assert.DoesNotContain("Virke till bryggan",filtered);
@@ -151,7 +154,16 @@ public class WebTests
         Assert.Equal(HttpStatusCode.Redirect,opening.StatusCode);
         var expense = await client.GetStringAsync("/Expenses/Edit?Year=2026");
         Assert.Equal(HttpStatusCode.Redirect,(await client.PostAsync("/Expenses/Edit",Form(expense,new() { ["Year"]="2026",["Category"]="El",["Amount"]="23000",["Comment"]="Årets el" }))).StatusCode);
-        Assert.Contains("El",await client.GetStringAsync("/Expenses?Year=2026"));
+        var expenses = await client.GetStringAsync("/Expenses?Year=2026");
+        Assert.Contains("Betalt från kontot",WebUtility.HtmlDecode(expenses));
+        Assert.Contains("Nytt privat utlägg",WebUtility.HtmlDecode(expenses));
+        Assert.Contains("class=\"active\" href=\"/Expenses\"",expenses);
+        Assert.DoesNotContain("class=\"active\" href=\"/Budget\"",expenses);
+        Assert.Contains("Årets el",WebUtility.HtmlDecode(expenses));
+        var artifacts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../artifacts/access-check"));
+        Directory.CreateDirectory(artifacts);
+        await File.WriteAllTextAsync(Path.Combine(artifacts,"owner-expenses.html"),expenses);
+        await File.WriteAllTextAsync(Path.Combine(artifacts,"owner-expense-edit.html"),expense);
         var deposit = await client.GetStringAsync("/Deposits/Edit");
         Assert.Equal(HttpStatusCode.Redirect,(await client.PostAsync("/Deposits/Edit",Form(deposit,new() { ["Person"]=owner.Id,["Date"]="2026-01-01",["Amount"]="5000" }))).StatusCode);
         var today = VasenDate.Today(TimeProvider.System);

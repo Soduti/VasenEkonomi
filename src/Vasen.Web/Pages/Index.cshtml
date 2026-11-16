@@ -71,8 +71,8 @@ else
         </tbody>
     </table>
     </div>
-    @if (Access.IsOwner) { <div class="selection-bar" id="selection-bar" hidden><div><strong id="selection-total">0 kr</strong><span id="selection-count" class="hint"></span></div><button class="button primary" id="reimburse-button">Avsluta valda</button><p id="selection-error" class="validation" role="alert"></p></div>
-    <noscript><button class="button primary section-gap">Avsluta markerade kvitton</button></noscript> }
+    @if (Access.IsOwner) { <div class="selection-bar" id="selection-bar" hidden><div><strong id="selection-total">0 kr</strong><span id="selection-count" class="hint"></span></div><button class="button primary" id="reimburse-button">Registrera uttag/klar...</button><p id="selection-error" class="validation" role="alert"></p></div>
+    <noscript><button class="button primary section-gap">Registrera uttag/klar...</button></noscript> }
     </form>
     <details class="receipt-person-totals"><summary>Summa per person</summary>
         <table class="receipt-person-table"><thead><tr><th scope="col">Person</th><th scope="col">Summa i urvalet</th></tr></thead><tbody>

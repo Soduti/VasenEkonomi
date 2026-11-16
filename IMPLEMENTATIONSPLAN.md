@@ -74,6 +74,8 @@ Vid ett lägre uttag kan användaren uttryckligen välja att räkna mellanskilln
 
 Ett kvitto får bara ingå i ett aktivt ersättningsuttag. En felaktig koppling ska kunna ångras med historik. Ersatta kvitton får ändras direkt, exempelvis belopp och beskrivning, med ändringshistorik. Uttagets mottagare och utbetalda belopp ändras inte automatiskt. Skillnaden mellan aktuella kvittobelopp och uttaget räknas om och visas. Personen på kvittot ändras inte. Ett uttag ska visa vilka kvitton det omfattar.
 
+Ångrade uttag visas inte i uttagslistan och ingår inte i sammanställningarnas antal eller belopp. Historiken bevaras i detaljvyn. Kvitton återgår till oersatta när uttaget ångras; tas de sedan bort ska varken kvittona eller det ångrade uttaget synas i sammanställningarna. Borttagning av ett kvitto döljer inte ett fortfarande giltigt uttag.
+
 ## 3. Inloggning och behörighet
 
 Första leveransen får egna konton med lösenord och långvarig inloggning med Kom ihåg mig.
@@ -103,6 +105,8 @@ Passkeys för Face ID, fingeravtryck eller PIN läggs till efter att grundflöde
 | Insättningar | Engångsinsättningar och automatiskt återkommande månadsinsättningar per person, fristående från banken |
 
 Fasta utgifter betalas i sina respektive system, exempelvis Kivra och Handelsbanken. De blir aldrig privata kvitton i Vasen. Underlaget behöver inte importeras eller registreras betalning för betalning.
+
+Utgifter nås direkt från huvudmenyn, separat från Nytt privat utlägg. Registrerade gemensamma utgifter är redan betalda och reglerade; de skapar inget personuttag och visas inte i kvittolistan. Listan visas som en kompakt tabell med kostnadsslag, kommentar och betalt belopp. Budgetens genväg finns kvar.
 
 För varje gemensam utgift anges år, kostnadsslag, faktiskt delbelopp och kommentar. Flera poster summeras till årets utfall per kostnadsslag. Budgetbelopp anges separat per år och kostnadsslag. Budgetbeloppet kan vara ett estimat. Tomt utfall betyder ännu inte angivet, medan noll betyder ett känt nollbelopp.
 

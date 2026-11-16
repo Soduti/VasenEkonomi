@@ -148,6 +148,45 @@ public class ReceiptTests : IAsyncLifetime
         Assert.Empty(await db.Receipts.ToListAsync());
         Assert.Equal(12500,(await db.Withdrawals.SingleAsync(w => w.Id == wid)).AmountOre);
     }
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SummariesExcludeUndoneWithdrawalsAndDeletedReceiptsButKeepValidPayments(bool undo)
+    {
+        var id = await Create(ore:15000);
+        var summaries = new BudgetSummaryService(db);
+        var receipts = new Vasen.Web.Pages.IndexModel(db);
+        var withdrawals = new Vasen.Web.Pages.Withdrawals.IndexModel(db);
+        await receipts.OnGetAsync();
+        Assert.Single(receipts.Receipts); Assert.Equal(15000,receipts.Total); Assert.Equal(15000,receipts.Outstanding);
+        var wid = await service.ReimburseAsync([id],new(2026,12,21),10000,null,Anna,true);
+        var withdrawal = await db.Withdrawals.SingleAsync();
+        await withdrawals.OnGetAsync();
+        Assert.Equal(10000,Assert.Single(withdrawals.Withdrawals).AmountOre);
+        var summary = await summaries.ForYearAsync(2026);
+        Assert.Equal(15000,summary.ActualOre); Assert.Equal(0,summary.OutstandingOre); Assert.Equal(5000,summary.OwnContributionOre);
+        if (undo)
+        {
+            await service.UndoAsync(wid,withdrawal.Version,Anna);
+            await withdrawals.OnGetAsync(); Assert.Empty(withdrawals.Withdrawals);
+            await receipts.OnGetAsync();
+            Assert.Single(receipts.Receipts); Assert.Equal(15000,receipts.Outstanding);
+            summary = await summaries.ForYearAsync(2026);
+            Assert.Equal(15000,summary.ActualOre); Assert.Equal(15000,summary.OutstandingOre); Assert.Equal(0,summary.OwnContributionOre);
+        }
+        var receipt = await db.Receipts.SingleAsync();
+        await service.TrashAsync(id,receipt.Version,false,Anna);
+        await receipts.OnGetAsync();
+        Assert.Empty(receipts.Receipts); Assert.Equal(0,receipts.Total); Assert.Equal(0,receipts.Outstanding);
+        summary = await summaries.ForYearAsync(2026);
+        Assert.Equal(0,summary.ActualOre); Assert.Equal(0,summary.OutstandingOre);
+        Assert.Equal(undo ? 0 : 5000,summary.OwnContributionOre);
+        await withdrawals.OnGetAsync();
+        Assert.Equal(undo ? 0 : 1,withdrawals.Withdrawals.Count);
+        Assert.Equal(undo ? 0 : 10000,withdrawals.Withdrawals.Sum(w => w.AmountOre));
+        Assert.Equal(undo,(await db.Withdrawals.SingleAsync()).IsUndone);
+        Assert.Contains(await db.AuditEntries.ToListAsync(),a => a.Entity == "Uttag" && a.EntityId == wid);
+    }
     [Fact]
     public async Task StaleVersionCannotOverwriteAnotherChange()
     {

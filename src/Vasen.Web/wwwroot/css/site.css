@@ -156,6 +156,7 @@
 .receipt-person-table td,.receipt-person-table thead th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .receipts-page .selection-bar{padding:10px;border-radius:8px;margin-top:8px;gap:6px}
 .receipts-page .selection-bar .button{font-size:.82rem;padding:9px 10px}
+.selection-bar .primary:hover,.selection-bar .primary:focus-visible{background:#d2dfce;color:var(--forest-dark)}
 .receipts-page .selection-bar strong{font-size:.95rem}
 .receipt-empty{padding:18px 0}
 .receipt-empty h2{font-size:1rem;margin-bottom:6px}
@@ -219,8 +220,10 @@
 .receipt-ocr .ocr-suggestion .button{font-size:.8rem;padding:10px 8px}
 #file-previews .receipt-file-preview>span{flex-basis:100%}
 
-.bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
-.bottom-nav:not(:has(a[href$="/Receipts/Edit"])){grid-template-columns:repeat(4,minmax(0,1fr))}
+.bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr))}
+.bottom-nav:not(:has(a[href$="/Receipts/Edit"])){grid-template-columns:repeat(5,minmax(0,1fr))}
+.expense-table{font-size:.88rem}.expense-table th:first-child{width:auto}.expense-table .money-cell{width:130px}.expense-table .budget-row-note{font-size:.8rem}
+@media(max-width:599px){body{padding-bottom:calc(125px + env(safe-area-inset-bottom))}.bottom-nav,.bottom-nav:not(:has(a[href$="/Receipts/Edit"])){grid-template-columns:repeat(3,minmax(0,1fr))}.bottom-nav a{flex-direction:row;gap:5px;min-height:44px;font-size:.75rem;line-height:1.25;text-align:center}.bottom-nav a span{font-size:1.1rem}}
 .receipt-readonly{padding:12px;margin-bottom:10px;border-radius:8px;overflow-wrap:anywhere}
 .receipt-readonly dl{margin:0;display:grid;grid-template-columns:minmax(90px,auto) minmax(0,1fr);gap:8px 12px;font-size:.88rem}
 .receipt-readonly dt{font-weight:400;color:var(--muted)}

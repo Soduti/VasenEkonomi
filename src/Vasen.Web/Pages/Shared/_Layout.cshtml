@@ -23,9 +23,10 @@
         var current = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
         <nav class="bottom-nav" aria-label="Huvudmeny">
             <a class="@(current == "/Index" ? "active" : "")" asp-page="/Index"><span aria-hidden="true">▤</span>Kvitton</a>
-            @if (Access.CanRegisterReceipts) { <a class="@(current == "/Receipts/Edit" ? "active" : "")" href="~/Receipts/Edit"><span aria-hidden="true">＋</span>Nytt utlägg</a> }
+            @if (Access.CanRegisterReceipts) { <a class="@(current == "/Receipts/Edit" ? "active" : "")" href="~/Receipts/Edit"><span aria-hidden="true">＋</span>Nytt privat utlägg</a> }
+            <a class="@(current.StartsWith("/Expenses") ? "active" : "")" asp-page="/Expenses/Index"><span aria-hidden="true">−</span>Utgifter</a>
             <a class="@(current.StartsWith("/Withdrawals") ? "active" : "")" asp-page="/Withdrawals/Index"><span aria-hidden="true">↗</span>Uttag</a>
-            <a class="@(current.StartsWith("/Budget") || current.StartsWith("/Expenses") ? "active" : "")" asp-page="/Budget/Index"><span aria-hidden="true">▥</span>Budget</a>
+            <a class="@(current.StartsWith("/Budget") ? "active" : "")" asp-page="/Budget/Index"><span aria-hidden="true">▥</span>Budget</a>
             <a class="@(current.StartsWith("/Deposits") ? "active" : "")" asp-page="/Deposits/Index"><span aria-hidden="true">↓</span>Insättningar</a>
         </nav>
     }
